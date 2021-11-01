@@ -1,3 +1,11 @@
+tevent (0.10.2-0ubuntu0.20.04.1) focal-security; urgency=medium
+
+  * Updated to upstream 0.10.2 as required by Samba security update.
+    - debian/libtevent0.symbols: updated for new version.
+    - debian/control: bump talloc Build-Depends to 2.3.1.
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Mon, 01 Nov 2021 14:47:04 -0400
+
 tevent (0.10.1-4) unstable; urgency=medium
 
   [ Debian Janitor ]

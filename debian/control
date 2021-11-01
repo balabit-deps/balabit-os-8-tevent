@@ -1,11 +1,12 @@
 Source: tevent
 Section: devel
 Priority: optional
-Maintainer: Debian Samba Maintainers <pkg-samba-maint@lists.alioth.debian.org>
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Debian Samba Maintainers <pkg-samba-maint@lists.alioth.debian.org>
 Uploaders: Jelmer Vernooij <jelmer@debian.org>, Mathieu Parent <sathieu@debian.org>
 Build-Depends: debhelper-compat (= 12),
                libaio-dev [linux-any],
-               libtalloc-dev (>= 2.3.0~),
+               libtalloc-dev (>= 2.3.1~),
                pkg-config,
                python3:any,
                python3-distutils
