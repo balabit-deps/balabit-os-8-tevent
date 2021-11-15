@@ -5,7 +5,7 @@
 import os, sys
 from waflib import Configure, Logs, Options, Utils, Context, Errors
 import wafsamba
-from samba_utils import os_path_relpath
+from samba_utils import symlink
 from optparse import SUPPRESS_HELP
 
 # this forces configure to be re-run if any of the configure
@@ -91,7 +91,7 @@ def options(opt):
     gr = opt.option_group('developer options')
 
     gr.add_option('-C',
-                   help='enable configure cacheing',
+                   help='enable configure caching',
                    action='store_true', dest='enable_configure_cache')
     gr.add_option('--enable-auto-reconfigure',
                    help='enable automatic reconfigure on build',
@@ -597,6 +597,13 @@ struct foo bar = { .y = 'X', .x = 1 };
     if conf.env.enable_libfuzzer:
         conf.DEFINE('ENABLE_LIBFUZZER', 1)
 
+    conf.load('clang_compilation_database')
+
+    # Create a symlink of the compile db for clangd
+    symlink(os.path.join(conf.bldnode.abspath(), 'default/compile_commands.json'),
+            os.path.join(conf.srcnode.abspath(), 'compile_commands.json'),
+            force=True)
+
     conf.SAMBA_BUILD_ENV()
 
 
@@ -604,7 +611,7 @@ def build(bld):
     # give a more useful message if the source directory has moved
     curdir = bld.path.abspath()
     srcdir = bld.srcnode.abspath()
-    relpath = os_path_relpath(curdir, srcdir)
+    relpath = os.path.relpath(curdir, srcdir)
     if relpath.find('../') != -1:
         Logs.error('bld.path %s is not a child of %s' % (curdir, srcdir))
         raise Errors.WafError('''The top source directory has moved. Please run distclean and reconfigure''')
