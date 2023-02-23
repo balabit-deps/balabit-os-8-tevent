@@ -164,11 +164,16 @@ static int test_memmove(void)
 static int test_strdup(void)
 {
 	char *x;
+	int cmp;
+
 	printf("test: strdup\n");
 	x = strdup("bla");
-	if (strcmp("bla", x) != 0) {
+
+	cmp = strcmp("bla", x);
+	if (cmp != 0) {
 		printf("failure: strdup [\nfailed: expected \"bla\", got \"%s\"\n]\n",
 			   x);
+		free(x);
 		return false;
 	}
 	free(x);
@@ -259,26 +264,44 @@ static int test_setenv(void)
 static int test_strndup(void)
 {
 	char *x;
+	int cmp;
+
 	printf("test: strndup\n");
 	x = strndup("bla", 0);
-	if (strcmp(x, "") != 0) {
+	cmp = strcmp(x, "");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
 		return false;
 	}
-	free(x);
+
 	x = strndup("bla", 2);
-	if (strcmp(x, "bl") != 0) {
+	cmp = strcmp(x, "bl");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
 		return false;
 	}
-	free(x);
+
+#ifdef __GNUC__
+# if __GNUC__ < 11
+	/*
+	 * This code will not compile with gcc11 -O3 anymore.
+	 *
+	 * error: ‘strndup’ specified bound 10 exceeds source size 4 [-Werror=stringop-overread]
+	 *          x = strndup("bla", 10);
+	 *          ^~~~~~~~~~~~~~~~~~
+	 */
 	x = strndup("bla", 10);
-	if (strcmp(x, "bla") != 0) {
+	cmp = strcmp(x, "bla");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
-		free(x);
 		return false;
 	}
-	free(x);
+# endif
+#endif /* __GNUC__ */
+
 	printf("success: strndup\n");
 	return true;
 }
@@ -325,24 +348,30 @@ static int test_setegid(void)
 
 static int test_asprintf(void)
 {
-	char *x;
+	char *x = NULL;
+
 	printf("test: asprintf\n");
 	if (asprintf(&x, "%d", 9) != 1) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (strcmp(x, "9") != 0) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (asprintf(&x, "dat%s", "a") != 4) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (strcmp(x, "data") != 0) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
+	free(x);
 	printf("success: asprintf\n");
 	return true;
 }
@@ -1070,6 +1099,7 @@ static bool test_closefrom(void)
 		fd = dup(0);
 		if (fd == -1) {
 			perror("dup failed");
+			closefrom(3);
 			return false;
 		}
 
@@ -1077,6 +1107,7 @@ static bool test_closefrom(void)
 
 		if (fd >= 1000) {
 			printf("fd=%d\n", fd);
+			closefrom(3);
 			return false;
 		}
 	}
@@ -1091,6 +1122,47 @@ static bool test_closefrom(void)
 			return false;
 		}
 	}
+
+	return true;
+}
+
+static bool test_array_del_element(void)
+{
+	int a[] = { 1,2,3,4,5 };
+
+	printf("test: array_del_element\n");
+
+	ARRAY_DEL_ELEMENT(a, 4, ARRAY_SIZE(a));
+
+	if ((a[0] != 1) ||
+	    (a[1] != 2) ||
+	    (a[2] != 3) ||
+	    (a[3] != 4) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	ARRAY_DEL_ELEMENT(a, 0, ARRAY_SIZE(a));
+
+	if ((a[0] != 2) ||
+	    (a[1] != 3) ||
+	    (a[2] != 4) ||
+	    (a[3] != 5) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	ARRAY_DEL_ELEMENT(a, 2, ARRAY_SIZE(a));
+
+	if ((a[0] != 2) ||
+	    (a[1] != 3) ||
+	    (a[2] != 5) ||
+	    (a[3] != 5) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	printf("success: array_del_element\n");
 
 	return true;
 }
@@ -1145,6 +1217,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_utimes();
 	ret &= test_memmem();
 	ret &= test_closefrom();
+	ret &= test_array_del_element();
 
 	return ret;
 }
